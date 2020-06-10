@@ -455,7 +455,11 @@ public class ManageArticleTagsActivity extends BaseActionBarActivity {
     }
 
 	private static List<Tag> filterUniqueTagList(List<Tag> src, List<Tag> excludeList) {
-        if (src.isEmpty()) {
+        if (excludeList == null || excludeList.isEmpty()) {
+            return src;
+        }
+
+        if (src != null && src.isEmpty()) {
             return new ArrayList<>(src);
         }
 
@@ -479,12 +483,11 @@ public class ManageArticleTagsActivity extends BaseActionBarActivity {
         for (Tag tag : src) {
             String tagLabel = tag.getLabel();
             if (tagLabel != null && tagLabel.toLowerCase(Locale.getDefault()).contains(label)) {
-                if (excludeList != null && excludeList.contains(tag)) continue;
-
                 result.add(tag);
             }
         }
-        return result;
+
+        return filterUniqueTagList(result, excludeList);
     }
 
     private static boolean equalLabels(String s1, String s2) {
