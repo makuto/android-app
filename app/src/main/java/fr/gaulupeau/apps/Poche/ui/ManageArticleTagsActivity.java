@@ -304,11 +304,10 @@ public class ManageArticleTagsActivity extends BaseActionBarActivity {
     }
 
     private void updateSuggestedTagList() {
-        if (TextUtils.isEmpty(currentText) && suggestedTags.isEmpty()) return;
-
         List<Tag> filteredList;
         if (TextUtils.isEmpty(currentText)) {
-            filteredList = new ArrayList<>();
+            // With no filter, suggest all available tags
+            filteredList = filterUniqueTagList(availableTags, currentTags);
         } else {
             filteredList = filterTagList(currentText, availableTags, currentTags);
         }
@@ -452,6 +451,20 @@ public class ManageArticleTagsActivity extends BaseActionBarActivity {
         }
 
         return null;
+    }
+
+	private static List<Tag> filterUniqueTagList(List<Tag> src, List<Tag> excludeList) {
+        if (src.isEmpty()) {
+            return new ArrayList<>(src);
+        }
+
+        List<Tag> result = new ArrayList<>();
+        for (Tag tag : src) {
+            if (excludeList != null && excludeList.contains(tag)) continue;
+
+            result.add(tag);
+        }
+        return result;
     }
 
     private static List<Tag> filterTagList(String label, List<Tag> src, List<Tag> excludeList) {
