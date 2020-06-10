@@ -142,6 +142,7 @@ public class ManageArticleTagsActivity extends BaseActionBarActivity {
         }
 
         updateCurrentTagList(newList);
+        updateSuggestedTagList();
 
         if (!TextUtils.isEmpty(text)) {
             setEditText(text);
