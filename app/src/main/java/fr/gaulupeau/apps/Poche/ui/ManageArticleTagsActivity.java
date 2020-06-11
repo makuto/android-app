@@ -459,13 +459,22 @@ public class ManageArticleTagsActivity extends BaseActionBarActivity {
             return src;
         }
 
-        if (src != null && src.isEmpty()) {
-            return new ArrayList<>(src);
+        if (src == null || src.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // Make a lowercase version once here to not have to convert case many times
+        List<String> excludeLowerList = new ArrayList<>();
+        for (Tag excludeTag : excludeList) {
+            excludeLowerList.add(excludeTag.getLabel().toLowerCase(Locale.getDefault()));
         }
 
         List<Tag> result = new ArrayList<>();
         for (Tag tag : src) {
-            if (excludeList != null && excludeList.contains(tag)) continue;
+            String tagLower = tag.getLabel().toLowerCase(Locale.getDefault());
+
+            if (excludeLowerList.contains(tagLower))
+                continue;
 
             result.add(tag);
         }
