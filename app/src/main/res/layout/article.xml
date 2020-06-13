@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/viewMain"
     android:orientation="vertical"
@@ -11,8 +12,8 @@
     <ScrollView
         android:id="@+id/scroll"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:layout_weight="3"
         tools:ignore="UselessParent">
 
         <LinearLayout
@@ -21,10 +22,19 @@
             android:orientation="vertical"
             tools:ignore="WebViewLayout">
 
+            <TextView
+                android:id="@+id/japaneseTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="12dip"
+                android:layout_marginRight="12dip" />
+
             <WebView
                 android:id="@+id/webViewContent"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content">
+
+            </WebView>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -37,18 +47,18 @@
                     android:id="@+id/view1"
                     android:layout_width="fill_parent"
                     android:layout_height="1dip"
-                    android:layout_marginBottom="5sp"
                     android:layout_marginTop="5sp"
+                    android:layout_marginBottom="5sp"
                     android:background="#000000"
-                    android:visibility="gone"/>
+                    android:visibility="gone" />
 
                 <TextView
                     android:id="@+id/tv_loading_article"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:textAppearance="?android:attr/textAppearanceLarge"
-                    android:text="@string/loading_article_text"/>
+                    android:text="@string/loading_article_text"
+                    android:textAppearance="?android:attr/textAppearanceLarge" />
 
                 <LinearLayout
                     android:id="@+id/bottomTools"
@@ -56,33 +66,37 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:visibility="gone">
+
                     <ImageButton
                         android:id="@+id/btnGoPrevious"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
+                        android:layout_weight="1"
                         android:contentDescription="@string/menuPrevious"
-                        android:src="@drawable/ic_action_previous_item"
-                        android:layout_weight="1"/>
+                        android:src="@drawable/ic_action_previous_item" />
+
                     <Button
                         android:id="@+id/btnMarkRead"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:text="@string/btnMarkRead"
-                        android:layout_weight="6"/>
+                        android:layout_weight="6"
+                        android:text="@string/btnMarkRead" />
+
                     <Button
                         android:id="@+id/btnMarkUnread"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:text="@string/btnMarkUnread"
                         android:layout_weight="6"
-                        android:visibility="gone"/>
+                        android:text="@string/btnMarkUnread"
+                        android:visibility="gone" />
+
                     <ImageButton
                         android:id="@+id/btnGoNext"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
+                        android:layout_weight="1"
                         android:contentDescription="@string/menuNext"
-                        android:src="@drawable/ic_action_next_item"
-                        android:layout_weight="1"/>
+                        android:src="@drawable/ic_action_next_item" />
                 </LinearLayout>
 
             </LinearLayout>
@@ -90,5 +104,73 @@
         </LinearLayout>
 
     </ScrollView>
+
+    <ScrollView
+        android:id="@+id/dictionary"
+        android:layout_width="match_parent"
+        android:layout_height="156dp"
+        android:layout_weight="0"
+        android:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/word"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="電子辞書"
+                android:textAppearance="@style/TextAppearance.AppCompat.Large" />
+
+            <TextView
+                android:id="@+id/pronunciation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="でんし・じしょ"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+
+            <TextView
+                android:id="@+id/definition"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="(n) electronic dictionary."
+                android:textAppearance="@style/TextAppearance.AppCompat.Body1" />
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/japaneseControls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/btnPreviousSentence"
+            style="@style/Widget.AppCompat.ImageButton"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/japanesePreviousPage"
+            app:srcCompat="@drawable/ic_action_previous_item" />
+
+        <Button
+            android:id="@+id/cycleDictionary"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/japaneseDictionaryNext" />
+
+        <ImageButton
+            android:id="@+id/btnNextSentence"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:contentDescription="@string/japaneseNextPage"
+            app:srcCompat="@drawable/ic_action_next_item" />
+
+    </LinearLayout>
 
 </LinearLayout>

@@ -3,9 +3,18 @@ package fr.gaulupeau.apps.Poche.ui;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Html;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.GestureDetector;
@@ -70,6 +79,13 @@ public class ReadArticleActivity extends BaseActionBarActivity {
     public static final String EXTRA_ID = "ReadArticleActivity.id";
     public static final String EXTRA_LIST_ARCHIVED = "ReadArticleActivity.archived";
     public static final String EXTRA_LIST_FAVORITES = "ReadArticleActivity.favorites";
+
+    private boolean JapaneseMode = false;
+    private Spanned JapaneseParsed;
+    private boolean JapaneseHasBeenParsed = false;
+    private String HtmlContent;
+    private List<SpannableStringBuilder> JapaneseSentences;
+    private int JapaneseSentenceIndex = 0;
 
     private static final String TAG = ReadArticleActivity.class.getSimpleName();
 
@@ -166,6 +182,42 @@ public class ReadArticleActivity extends BaseActionBarActivity {
         super.applyOverrideConfiguration(overrideConfiguration);
     }
 
+    private void macoyTestSpans() {
+        TextView textView = findViewById(R.id.definition);
+        TextPaint defaultTextPaint = textView.getPaint();
+        String text = "ヒポ先生があたらしいおともだちをみんなにしょうかいしました。";
+        SpannableString ss = new SpannableString(text);
+        ClickableSpan clickableSpan1 = new ClickableSpan() {
+            @Override
+            public void onClick(View widget) {
+                Toast.makeText(ReadArticleActivity.this, "One", Toast.LENGTH_SHORT).show();
+            }
+            @Override
+            public void updateDrawState(TextPaint ds) {
+                super.updateDrawState(ds);
+                ds.set(defaultTextPaint);
+                //ds.setColor(Color.BLUE);
+                //ds.setUnderlineText(true);
+            }
+        };
+        ClickableSpan clickableSpan2 = new ClickableSpan() {
+            @Override
+            public void onClick(View widget) {
+                Toast.makeText(ReadArticleActivity.this, "Two", Toast.LENGTH_SHORT).show();
+            }
+            @Override
+            public void updateDrawState(TextPaint ds) {
+                super.updateDrawState(ds);
+                //ds.setColor(Color.BLUE);
+                ds.setUnderlineText(false);
+            }
+        };
+        ss.setSpan(clickableSpan1, 2, 4, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        ss.setSpan(clickableSpan2, 16, 20, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        textView.setText(ss);
+        textView.setMovementMethod(LinkMovementMethod.getInstance());
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         settings = App.getInstance().getSettings();
@@ -240,9 +292,13 @@ public class ReadArticleActivity extends BaseActionBarActivity {
 
         initTts();
 
+        initJapaneseMode();
+
         if (disableTouch) {
             showDisableTouchToast();
         }
+
+        macoyTestSpans();
 
         EventBus.getDefault().register(this);
     }
@@ -306,6 +362,7 @@ public class ReadArticleActivity extends BaseActionBarActivity {
         if (article != null) articleActionsHelper.initMenu(menu, article);
 
         menu.findItem(R.id.menuTTS).setChecked(ttsFragment != null);
+        menu.findItem(R.id.menuJapaneseMode).setChecked(JapaneseMode);
 
         return true;
     }
@@ -332,6 +389,10 @@ public class ReadArticleActivity extends BaseActionBarActivity {
 
             case R.id.menuTTS:
                 toggleTTS(true);
+                return true;
+
+            case R.id.menuJapaneseMode:
+                toggleJapaneseMode();
                 return true;
         }
 
@@ -874,11 +935,11 @@ public class ReadArticleActivity extends BaseActionBarActivity {
 
         String extraHead = getExtraHead();
         String header = getHeader();
-        String htmlContent = getHtmlContent();
+        HtmlContent = getHtmlContent();
 
         return String.format(htmlBase, cssName, extraHead, classAttr, escapeHtml(articleTitle),
                 getString(R.string.articleContent_globeIconAltText),
-                escapeHtml(articleUrl), escapeHtml(articleDomain), header, htmlContent);
+                escapeHtml(articleUrl), escapeHtml(articleDomain), header, HtmlContent);
     }
 
     private String getHtmlBase() {
@@ -1273,6 +1334,143 @@ public class ReadArticleActivity extends BaseActionBarActivity {
         if (ttsFragment != null) {
             ttsFragment.onDocumentLoadFinished();
         }
+    }
+
+    // Copy JapaneseParsed into SpannedStringBuilder. See
+    // https://developer.android.com/reference/android/text/SpannableStringBuilder
+    // https://developer.android.com/guide/topics/text/spans (recommends SSB for many many spans)
+    // Then, add a span for every japanese character and figure out how to get where the
+    // clicked character is in the string.
+    // After that, it's all the deconjugation and dictionary work (platform agnostic)
+    public List<SpannableStringBuilder> buildClickableJapanese(Spanned parsedFromHtml) {
+        char[] sentenceBreaks = {'。', '！', '!',  '?', '？', '\n'};
+
+        List<SpannableStringBuilder> sentences = new ArrayList<>();
+        SpannableStringBuilder sentence =
+            new SpannableStringBuilder();
+            // new SpannableStringBuilder(parsedFromHtml.subSequence(0, parsedFromHtml.length()));
+        int numChars = parsedFromHtml.length();
+        int sentenceStart = 0;
+        // Don't make sentences of pure whitespace/newlines etc.
+        boolean hasVisibleSymbols = false;
+        for (int i = 0; i < numChars; ++i) {
+            char currentChar = parsedFromHtml.charAt(i);
+			// 65532 = OBJECT REPLACEMENT CHARACTER, e.g. stand-in for images from the fromHtml()
+			// conversion, which I can then use to bring the images back. In this case, I'll just
+			// treat them as non-visible
+            if (currentChar != 65532 && !Character.isWhitespace(currentChar)) {
+                hasVisibleSymbols = true;
+            }
+
+            // Don't chop sentences if there's nothing to show
+            if (!hasVisibleSymbols) {
+                // Trim nonvisible characters from start of sentence
+                sentenceStart++;
+                continue;
+            }
+
+            // Check for sentence breaks
+            for (int sentenceBreaker = 0; sentenceBreaker < sentenceBreaks.length; ++sentenceBreaker) {
+                if (currentChar == sentenceBreaks[sentenceBreaker]) {
+                    sentence.append(parsedFromHtml.subSequence(sentenceStart, i + 1));
+                    Log.v(TAG, "Sentence found: " + sentence);
+                    sentences.add(sentence);
+                    sentence = new SpannableStringBuilder();
+
+                    hasVisibleSymbols = false;
+                    sentenceStart = i + 1;
+                    break;
+                }
+            }
+        }
+
+        return sentences;
+    }
+
+    private void initJapaneseButtons() {
+        ImageButton buttonGoPrevious = findViewById(R.id.btnPreviousSentence);
+        ImageButton buttonGoNext = findViewById(R.id.btnNextSentence);
+
+        buttonGoPrevious.setOnClickListener(v -> onPreviousSentence());
+        buttonGoNext.setOnClickListener(v -> onNextSentence());
+
+        updateJapaneseButtons();
+    }
+
+    private void updateDisplaySentence() {
+        TextView japaneseView = findViewById(R.id.japaneseTextView);
+        japaneseView.setText(JapaneseSentences.get(JapaneseSentenceIndex));
+        updateJapaneseButtons();
+    }
+
+    private void onPreviousSentence() {
+        if (JapaneseSentenceIndex > 0) {
+            JapaneseSentenceIndex--;
+            updateDisplaySentence();
+        }
+    }
+
+    private void onNextSentence() {
+        if (JapaneseSentenceIndex + 1 < JapaneseSentences.size()) {
+            JapaneseSentenceIndex++;
+            updateDisplaySentence();
+        }
+    }
+
+    private void updateJapaneseButtons() {
+        int numSentences = JapaneseSentences != null ? JapaneseSentences.size() : 0;
+        findViewById(R.id.btnPreviousSentence).setVisibility(JapaneseSentenceIndex == 0 ?
+                                                             View.GONE : View.VISIBLE);
+        findViewById(R.id.btnNextSentence).setVisibility(JapaneseSentenceIndex + 1 >= numSentences ?
+                                                         View.GONE : View.VISIBLE);
+    }
+
+    public void initJapaneseMode() {
+        ScrollView dictionaryView = findViewById(R.id.dictionary);
+        WebView webView = findViewById(R.id.webViewContent);
+        TextView japaneseView = findViewById(R.id.japaneseTextView);
+        LinearLayout japaneseControls = findViewById(R.id.japaneseControls);
+        LinearLayout articleTools = findViewById(R.id.bottomTools);
+        if (JapaneseMode) {
+            initJapaneseButtons();
+
+            if (!JapaneseHasBeenParsed) {
+                JapaneseParsed = Html.fromHtml(HtmlContent);
+
+                JapaneseSentences = buildClickableJapanese(JapaneseParsed);
+                JapaneseHasBeenParsed = true;
+
+                if (!JapaneseSentences.isEmpty()) {
+                    JapaneseSentenceIndex = 0;
+                    updateDisplaySentence();
+                }
+                else {
+                    japaneseView.setText(JapaneseParsed);
+                }
+            }
+
+            dictionaryView.setVisibility(View.VISIBLE);
+            japaneseView.setVisibility(View.VISIBLE);
+            japaneseControls.setVisibility(View.VISIBLE);
+
+            webView.setVisibility(View.GONE);
+            articleTools.setVisibility(View.GONE);
+        }
+        else {
+            dictionaryView.setVisibility(View.GONE);
+            japaneseView.setVisibility(View.GONE);
+            japaneseControls.setVisibility(View.GONE);
+
+            webView.setVisibility(View.VISIBLE);
+            articleTools.setVisibility(View.VISIBLE);
+        }
+    }
+
+    public void toggleJapaneseMode() {
+        JapaneseMode = !JapaneseMode;
+        initJapaneseMode();
+
+        invalidateOptionsMenu();
     }
 
     private boolean loadArticle(long id) {

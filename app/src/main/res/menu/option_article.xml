@@ -55,6 +55,10 @@
         android:id="@+id/menuDecreaseFontSize"
         android:title="@string/menu_readArticle_decreaseFontSize"/>
     <item
+        android:id="@+id/menuJapaneseMode"
+        android:checkable="true"
+        android:title="@string/menuJapaneseMode" />
+    <item
         android:id="@+id/menuTTS"
         android:checkable="true"
         android:title="@string/menuTTS"/>

@@ -376,4 +376,9 @@
     <string name="notification_action_media_play">Play</string>
     <string name="notification_action_media_fastforward">Fast Forward</string>
     <string name="notification_action_media_next">Next</string>
+
+	<string name="menuJapaneseMode">Japanese Mode</string>
+	<string name="japanesePreviousPage">Previous</string>
+	<string name="japaneseNextPage">Next</string>
+	<string name="japaneseDictionaryNext">More definitions</string>
 </resources>
