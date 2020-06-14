@@ -121,21 +121,21 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/word"
+                android:id="@+id/dictionaryWord"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="電子辞書"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large" />
 
             <TextView
-                android:id="@+id/pronunciation"
+                android:id="@+id/dictionaryReading"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="でんし・じしょ"
                 android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
 
             <TextView
-                android:id="@+id/definition"
+                android:id="@+id/dictionaryDefinition"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="(n) electronic dictionary."

@@ -3,11 +3,10 @@ package fr.gaulupeau.apps.Poche.ui;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Html;
-import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -184,7 +183,7 @@ public class ReadArticleActivity extends BaseActionBarActivity {
     }
 
     private void macoyTestSpans() {
-        TextView textView = findViewById(R.id.definition);
+        TextView textView = findViewById(R.id.dictionaryDefinition);
         TextPaint defaultTextPaint = textView.getPaint();
         String text = "ヒポ先生があたらしいおともだちをみんなにしょうかいしました。";
         SpannableString ss = new SpannableString(text);
@@ -1525,8 +1524,18 @@ public class ReadArticleActivity extends BaseActionBarActivity {
                 }
             }
 
-            // Make sure it is clickable
+            // It must have a movement method to support ClickableSpans
             japaneseView.setMovementMethod(LinkMovementMethod.getInstance());
+
+            // Ensure we're using a Japanese font (IPA Mincho or Gothic) instead of a Chinese one.
+			// Most Android devices default to the Chinese versions, which don't match Japanese
+            Typeface japaneseTypeface = Typeface.createFromAsset(getAssets(), "ipaexg.ttf");
+			japaneseView.setTypeface(japaneseTypeface);
+			// Also set for the dictionary
+            TextView dictionaryWordView = findViewById(R.id.dictionaryWord);
+            TextView dictionaryReadingView = findViewById(R.id.dictionaryReading);
+            dictionaryWordView.setTypeface(japaneseTypeface);
+            dictionaryReadingView.setTypeface(japaneseTypeface);
 
             dictionaryView.setVisibility(View.VISIBLE);
             japaneseView.setVisibility(View.VISIBLE);
