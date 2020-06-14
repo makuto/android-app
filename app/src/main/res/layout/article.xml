@@ -24,10 +24,13 @@
 
             <TextView
                 android:id="@+id/japaneseTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_marginLeft="12dip"
-                android:layout_marginRight="12dip" />
+                android:layout_marginRight="12dip"
+                app:autoSizeMaxTextSize="50sp"
+                app:autoSizeMinTextSize="30sp"
+                app:autoSizeTextType="uniform" />
 
             <WebView
                 android:id="@+id/webViewContent"
@@ -175,8 +178,11 @@
 
     <SeekBar
         android:id="@+id/articleSentenceSeek"
+        style="@style/Widget.AppCompat.SeekBar.Discrete"
         android:layout_width="match_parent"
-        android:layout_height="20dp"
-        android:layout_weight="0" />
+        android:layout_height="25dp"
+        android:layout_weight="0"
+        android:max="1"
+        android:progress="0" />
 
 </LinearLayout>

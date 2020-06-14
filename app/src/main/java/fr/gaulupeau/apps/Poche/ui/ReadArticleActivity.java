@@ -1337,13 +1337,54 @@ public class ReadArticleActivity extends BaseActionBarActivity {
         }
     }
 
+    // Make every character clickable. If this is too slow/too memory intensive, I can look
+    // into only converting the current sentence
+    private void addSpansForJapaneseLookup(SpannableStringBuilder sentence, int spanColor) {
+        int numChars = sentence.length();
+        for (int i = 0; i < numChars; ++i) {
+            char currentChar = sentence.charAt(i);
+            // 65532 = OBJECT REPLACEMENT CHARACTER, e.g. stand-in for images from the fromHtml()
+            // conversion, which I can then use to bring the images back. In this case, I'll just
+            // treat them as non-visible
+            if (currentChar == 65532 || Character.isWhitespace(currentChar)) {
+                continue;
+            }
+
+            class CharacterClickableSpan extends ClickableSpan {
+                public char associatedCharacter;
+                public int charIndex;
+                @Override
+                public void onClick(View widget) {
+                    StringBuilder outputString = new StringBuilder();
+                    outputString.append(associatedCharacter);
+                    Log.v(TAG, outputString.toString());
+                    Toast.makeText(ReadArticleActivity.this, outputString.toString(), Toast.LENGTH_SHORT).show();
+                }
+                @Override
+                public void updateDrawState(TextPaint ds) {
+                    super.updateDrawState(ds);
+                    // Make the span blend in
+                    // ds.set(defaultTextPaint);
+                    ds.setColor(spanColor);
+                    ds.setUnderlineText(false);
+                }
+            };
+            CharacterClickableSpan clickableSpan = new CharacterClickableSpan();
+            clickableSpan.associatedCharacter = currentChar;
+            clickableSpan.charIndex = i;
+            sentence.setSpan(clickableSpan, i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
     // Copy JapaneseParsed into SpannedStringBuilder. See
     // https://developer.android.com/reference/android/text/SpannableStringBuilder
     // https://developer.android.com/guide/topics/text/spans (recommends SSB for many many spans)
     // Then, add a span for every japanese character and figure out how to get where the
     // clicked character is in the string.
     // After that, it's all the deconjugation and dictionary work (platform agnostic)
-    public List<SpannableStringBuilder> buildClickableJapanese(Spanned parsedFromHtml) {
+    private List<SpannableStringBuilder> buildClickableJapanese(Spanned parsedFromHtml) {
+        TextView japaneseView = findViewById(R.id.japaneseTextView);
+        int defaultColor = japaneseView.getCurrentTextColor();
         char[] sentenceBreaks = {'。', '！', '!',  '?', '？', '\n'};
 
         List<SpannableStringBuilder> sentences = new ArrayList<>();
@@ -1356,9 +1397,9 @@ public class ReadArticleActivity extends BaseActionBarActivity {
         boolean hasVisibleSymbols = false;
         for (int i = 0; i < numChars; ++i) {
             char currentChar = parsedFromHtml.charAt(i);
-			// 65532 = OBJECT REPLACEMENT CHARACTER, e.g. stand-in for images from the fromHtml()
-			// conversion, which I can then use to bring the images back. In this case, I'll just
-			// treat them as non-visible
+            // 65532 = OBJECT REPLACEMENT CHARACTER, e.g. stand-in for images from the fromHtml()
+            // conversion, which I can then use to bring the images back. In this case, I'll just
+            // treat them as non-visible
             if (currentChar != 65532 && !Character.isWhitespace(currentChar)) {
                 hasVisibleSymbols = true;
             }
@@ -1374,10 +1415,12 @@ public class ReadArticleActivity extends BaseActionBarActivity {
             for (int sentenceBreaker = 0; sentenceBreaker < sentenceBreaks.length; ++sentenceBreaker) {
                 if (currentChar == sentenceBreaks[sentenceBreaker]) {
                     sentence.append(parsedFromHtml.subSequence(sentenceStart, i + 1));
+                    addSpansForJapaneseLookup(sentence, defaultColor);
                     Log.v(TAG, "Sentence found: " + sentence);
                     sentences.add(sentence);
-                    sentence = new SpannableStringBuilder();
 
+                    // Prepare for the next sentence
+                    sentence = new SpannableStringBuilder();
                     hasVisibleSymbols = false;
                     sentenceStart = i + 1;
                     break;
@@ -1397,18 +1440,18 @@ public class ReadArticleActivity extends BaseActionBarActivity {
 
         SeekBar articleSentenceSeek = findViewById(R.id.articleSentenceSeek);
         articleSentenceSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-			@Override
-			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-				// Filter out changing of progress by updateDisplaySentence() itself
-				if (fromUser) {
-				    Log.v(TAG, "progress = " + progress);
-					int numSentences = JapaneseSentences != null ? JapaneseSentences.size() : 1;
-					if (progress < numSentences) {
-						JapaneseSentenceIndex = progress;
-						updateDisplaySentence();
-					}
-				}
-			}
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                // Filter out changing of progress by updateDisplaySentence() itself
+                if (fromUser) {
+                    Log.v(TAG, "progress = " + progress);
+                    int numSentences = JapaneseSentences != null ? JapaneseSentences.size() : 1;
+                    if (progress < numSentences) {
+                        JapaneseSentenceIndex = progress;
+                        updateDisplaySentence();
+                    }
+                }
+            }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
@@ -1464,7 +1507,7 @@ public class ReadArticleActivity extends BaseActionBarActivity {
         LinearLayout japaneseControls = findViewById(R.id.japaneseControls);
         LinearLayout articleTools = findViewById(R.id.bottomTools);
         SeekBar articleSentenceSeek = findViewById(R.id.articleSentenceSeek);
-		
+
         if (JapaneseMode) {
             initJapaneseButtons();
             if (!JapaneseHasBeenParsed) {
@@ -1482,10 +1525,13 @@ public class ReadArticleActivity extends BaseActionBarActivity {
                 }
             }
 
+            // Make sure it is clickable
+            japaneseView.setMovementMethod(LinkMovementMethod.getInstance());
+
             dictionaryView.setVisibility(View.VISIBLE);
             japaneseView.setVisibility(View.VISIBLE);
-			japaneseControls.setVisibility(View.VISIBLE);
-			articleSentenceSeek.setVisibility(View.VISIBLE);
+            japaneseControls.setVisibility(View.VISIBLE);
+            articleSentenceSeek.setVisibility(View.VISIBLE);
 
             webView.setVisibility(View.GONE);
             articleTools.setVisibility(View.GONE);
@@ -1494,8 +1540,8 @@ public class ReadArticleActivity extends BaseActionBarActivity {
             dictionaryView.setVisibility(View.GONE);
             japaneseView.setVisibility(View.GONE);
             japaneseControls.setVisibility(View.GONE);
-			articleSentenceSeek.setVisibility(View.GONE);
-			
+            articleSentenceSeek.setVisibility(View.GONE);
+
             webView.setVisibility(View.VISIBLE);
             articleTools.setVisibility(View.VISIBLE);
         }
