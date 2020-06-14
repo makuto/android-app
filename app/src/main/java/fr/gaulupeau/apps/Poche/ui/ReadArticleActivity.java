@@ -37,6 +37,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -1394,12 +1395,31 @@ public class ReadArticleActivity extends BaseActionBarActivity {
         buttonGoPrevious.setOnClickListener(v -> onPreviousSentence());
         buttonGoNext.setOnClickListener(v -> onNextSentence());
 
-        updateJapaneseButtons();
-    }
+        SeekBar articleSentenceSeek = findViewById(R.id.articleSentenceSeek);
+        articleSentenceSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+				// Filter out changing of progress by updateDisplaySentence() itself
+				if (fromUser) {
+				    Log.v(TAG, "progress = " + progress);
+					int numSentences = JapaneseSentences != null ? JapaneseSentences.size() : 1;
+					if (progress < numSentences) {
+						JapaneseSentenceIndex = progress;
+						updateDisplaySentence();
+					}
+				}
+			}
 
-    private void updateDisplaySentence() {
-        TextView japaneseView = findViewById(R.id.japaneseTextView);
-        japaneseView.setText(JapaneseSentences.get(JapaneseSentenceIndex));
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+        });
+        articleSentenceSeek.setMax(JapaneseSentences != null ? JapaneseSentences.size() - 1 : 1);
+
         updateJapaneseButtons();
     }
 
@@ -1417,12 +1437,24 @@ public class ReadArticleActivity extends BaseActionBarActivity {
         }
     }
 
+    private void updateDisplaySentence() {
+        Log.v(TAG, "Set sentence to " + JapaneseSentenceIndex);
+        TextView japaneseView = findViewById(R.id.japaneseTextView);
+        japaneseView.setText(JapaneseSentences.get(JapaneseSentenceIndex));
+        japaneseView.invalidate();
+        updateJapaneseButtons();
+    }
+
     private void updateJapaneseButtons() {
         int numSentences = JapaneseSentences != null ? JapaneseSentences.size() : 0;
         findViewById(R.id.btnPreviousSentence).setVisibility(JapaneseSentenceIndex == 0 ?
                                                              View.GONE : View.VISIBLE);
         findViewById(R.id.btnNextSentence).setVisibility(JapaneseSentenceIndex + 1 >= numSentences ?
                                                          View.GONE : View.VISIBLE);
+
+        SeekBar articleSentenceSeek = findViewById(R.id.articleSentenceSeek);
+        articleSentenceSeek.setMax(JapaneseSentences != null ? JapaneseSentences.size() - 1 : 1);
+        articleSentenceSeek.setProgress(JapaneseSentenceIndex);
     }
 
     public void initJapaneseMode() {
@@ -1431,9 +1463,10 @@ public class ReadArticleActivity extends BaseActionBarActivity {
         TextView japaneseView = findViewById(R.id.japaneseTextView);
         LinearLayout japaneseControls = findViewById(R.id.japaneseControls);
         LinearLayout articleTools = findViewById(R.id.bottomTools);
+        SeekBar articleSentenceSeek = findViewById(R.id.articleSentenceSeek);
+		
         if (JapaneseMode) {
             initJapaneseButtons();
-
             if (!JapaneseHasBeenParsed) {
                 JapaneseParsed = Html.fromHtml(HtmlContent);
 
@@ -1451,7 +1484,8 @@ public class ReadArticleActivity extends BaseActionBarActivity {
 
             dictionaryView.setVisibility(View.VISIBLE);
             japaneseView.setVisibility(View.VISIBLE);
-            japaneseControls.setVisibility(View.VISIBLE);
+			japaneseControls.setVisibility(View.VISIBLE);
+			articleSentenceSeek.setVisibility(View.VISIBLE);
 
             webView.setVisibility(View.GONE);
             articleTools.setVisibility(View.GONE);
@@ -1460,7 +1494,8 @@ public class ReadArticleActivity extends BaseActionBarActivity {
             dictionaryView.setVisibility(View.GONE);
             japaneseView.setVisibility(View.GONE);
             japaneseControls.setVisibility(View.GONE);
-
+			articleSentenceSeek.setVisibility(View.GONE);
+			
             webView.setVisibility(View.VISIBLE);
             articleTools.setVisibility(View.VISIBLE);
         }
